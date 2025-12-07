@@ -1,0 +1,16 @@
+
+# Ignorar ambiente virtual
+venv_PT/
+venv/
+env/
+
+# Ignorar arquivos compilados do Python
+__pycache__/
+*.pyc
+
+# Ignorar configurações do VSCode
+.vscode/
+
+# Ignorar banco de dados (Opcional: se quiser salvar o banco, remova essa linha)
+# Mas geralmente não se sobe banco de dados de produção para o git
+# *.sql
