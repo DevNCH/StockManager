@@ -7,7 +7,7 @@ class InsumoDAO:
     def listar_todos():
         conn = conectar()
         cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT * FROM insumos")
+        cur.execute("SELECT * FROM insumos ORDER BY id DESC")
         dados = cur.fetchall()
 
         cur.close()

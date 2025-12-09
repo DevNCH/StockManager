@@ -43,19 +43,22 @@ class HomeView(ctk.CTkFrame):
 
         # 3. Botão Fichas Técnicas (Ainda não implementado)
         btn_fichas = ctk.CTkButton(self, text="Fichas Técnicas", 
-                                   fg_color="#555", state="disabled", 
+                                   fg_color="#1f6aa5", hover_color="#144870",
+                                   command=lambda: self.controller_main.mostrar_fichas(),
                                    **btn_params)
         btn_fichas.grid(row=4, column=0, pady=10)
 
         # 4. Botão Pedidos (Ainda não implementado)
         btn_pedidos = ctk.CTkButton(self, text="Pedidos", 
-                                    fg_color="#555", state="disabled", 
+                                   fg_color="#1f6aa5", hover_color="#144870",
+                                   command=lambda: self.controller_main.mostrar_pedidos(),
                                     **btn_params)
         btn_pedidos.grid(row=5, column=0, pady=10)
 
         # 5. Botão Relatórios (Ainda não implementado)
         btn_relatorios = ctk.CTkButton(self, text="Relatórios", 
-                                       fg_color="#555", state="disabled", 
+                                   fg_color="#1f6aa5", hover_color="#144870",
+                                   command=lambda: self.controller_main.mostrar_relatorios(),
                                        **btn_params)
         btn_relatorios.grid(row=6, column=0, pady=10)
 

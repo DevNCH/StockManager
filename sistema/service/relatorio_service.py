@@ -1,96 +1,87 @@
 from sistema.dao.pedido_dao import PedidoDAO
+from sistema.dao.nota_fiscal_dao import NotaFiscalDAO
 from sistema.dao.ficha_tecnica_pedido_dao import FichaTecnicaPedidoDAO
 from sistema.dao.ficha_tecnica_insumo_dao import FichaTecnicaInsumoDAO
-from sistema.dao.nota_fiscal_dao import NotaFiscalDAO
-
+from sistema.dao.ficha_tecnica_dao import FichaTecnicaDAO
+from sistema.dao.insumo_dao import InsumoDAO
+from sistema.utils.helpers import Helpers
 
 class RelatorioService:
 
-    # -----------------------------------
-    # 1 — Faturamento no período
-    # -----------------------------------
     @staticmethod
-    def faturamento(data_inicio, data_fim):
-        pedidos = PedidoDAO.buscar_por_periodo(data_inicio, data_fim)
-        return sum(p.valor for p in pedidos)
+    def gerar_dados_dashboard(data_inicio_br, data_fim_br):
+        # Converte datas para MySQL (YYYY-MM-DD)
+        dt_ini = Helpers.data_para_mysql(data_inicio_br)
+        dt_fim = Helpers.data_para_mysql(data_fim_br)
 
-    @staticmethod
-    def produtos_vendidos(data_inicio, data_fim):
-        pedidos = PedidoDAO.buscar_por_periodo(data_inicio, data_fim)
-        ids = [p.id for p in pedidos]
-        
-        # Se não tiver pedidos, retorna vazio para não quebrar o SQL
-        if not ids:
-            return {}
+        # 1. Financeiro Geral
+        pedidos = PedidoDAO.buscar_por_periodo(dt_ini, dt_fim)
+        notas = NotaFiscalDAO.buscar_por_periodo(dt_ini, dt_fim)
 
-        vinculos = FichaTecnicaPedidoDAO.listar_por_pedidos(ids)
+        faturamento = sum([p.valor for p in pedidos])
+        custos = sum([n.valor for n in notas])
+        lucro = faturamento - custos
 
-        contagem = {}
-        for v in vinculos:
-            # ANTES: contagem[...] + 1
-            # AGORA: Soma a quantidade que foi vendida (ex: 2 pastéis)
-            qtd = float(v.quantidade) if v.quantidade else 1.0
-            contagem[v.id_ficha_tecnica] = contagem.get(v.id_ficha_tecnica, 0) + qtd
-
-        return contagem
-
-    @staticmethod
-    def consumo_insumos(data_inicio, data_fim):
-        """
-        Calcula o consumo teórico baseado nas vendas.
-        Nota: Para ser 100% exato com as customizações (ingredientes retirados),
-        seria necessário uma query SQL complexa. Para o prazo de 1 semana,
-        usar o consumo padrão (baseado na ficha técnica) é aceitável.
-        """
-        pedidos = PedidoDAO.buscar_por_periodo(data_inicio, data_fim)
+        # 2. Ranking de Produtos Vendidos
         ids_pedidos = [p.id for p in pedidos]
-        
-        if not ids_pedidos:
-            return {}
+        ranking_produtos = {} # {id_ficha: {'nome': str, 'qtd': float, 'total': float}}
 
-        # Busca todos os itens vendidos nesses pedidos
-        itens_vendidos = FichaTecnicaPedidoDAO.listar_por_pedidos(ids_pedidos)
-        
-        consumo_total = {}
-
-        for item_venda in itens_vendidos:
-            # Para cada pastel vendido, busca sua receita
-            receita = FichaTecnicaInsumoDAO.listar_por_ficha(item_venda.id_ficha_tecnica)
+        if ids_pedidos:
+            # Busca todos os itens vendidos nesses pedidos
+            # Nota: O DAO precisa de um método 'listar_por_pedidos' (plural) ou fazemos loop.
+            # Vamos fazer loop para ser seguro com o DAO atual, embora menos performático.
+            # Se tiver muitos pedidos, o ideal é criar um método SQL 'WHERE id_pedido IN (...)' no DAO.
             
-            qtd_vendida = float(item_venda.quantidade)
+            # Otimização: Vamos usar o método que busca por ID do pedido
+            todos_itens = []
+            for id_ped in ids_pedidos:
+                itens = FichaTecnicaPedidoDAO.listar_por_pedido(id_ped)
+                todos_itens.extend(itens)
 
-            for ingrediente in receita:
-                total_item = float(ingrediente.quantidade) * qtd_vendida
-                consumo_total[ingrediente.id_insumo] = consumo_total.get(ingrediente.id_insumo, 0) + total_item
+            for item in todos_itens:
+                idf = item.id_ficha_tecnica
+                qtd = float(item.quantidade)
+                val = float(item.valor_unitario)
+                
+                if idf not in ranking_produtos:
+                    ficha = FichaTecnicaDAO.buscar_por_id(idf)
+                    nome_prod = ficha.nome if ficha else "Desconhecido"
+                    ranking_produtos[idf] = {'nome': nome_prod, 'qtd': 0.0, 'total': 0.0}
+                
+                ranking_produtos[idf]['qtd'] += qtd
+                ranking_produtos[idf]['total'] += (qtd * val)
 
-        return consumo_total
+        # Transforma dicionário em lista ordenada (Mais vendidos primeiro)
+        lista_produtos = sorted(ranking_produtos.values(), key=lambda x: x['qtd'], reverse=True)
 
+        # 3. Consumo de Insumos (Teórico)
+        consumo_insumos = {} # {id_insumo: {'nome': str, 'qtd': float}}
+        
+        # Para cada produto vendido, soma sua receita
+        for item_venda in todos_itens if ids_pedidos else []:
+            idf = item_venda.id_ficha_tecnica
+            qtd_venda = float(item_venda.quantidade)
+            
+            # Pega a receita
+            receita = FichaTecnicaInsumoDAO.listar_por_ficha(idf)
+            
+            for ing in receita:
+                idi = ing.id_insumo
+                qtd_receita = float(ing.quantidade)
+                total_consumido = qtd_receita * qtd_venda
+                
+                if idi not in consumo_insumos:
+                    obj_insumo = InsumoDAO.buscar_por_id(idi)
+                    nome_ins = obj_insumo.nome if obj_insumo else "Desconhecido"
+                    unidade = obj_insumo.unidade_medida if obj_insumo else ""
+                    consumo_insumos[idi] = {'nome': nome_ins, 'qtd': 0.0, 'unidade': unidade}
+                
+                consumo_insumos[idi]['qtd'] += total_consumido
 
-    # -----------------------------------
-    # 4 — Gasto com insumos (via notas fiscais)
-    # -----------------------------------
-    @staticmethod
-    def gastos_insumos(data_inicio, data_fim):
-        notas = NotaFiscalDAO.buscar_por_periodo(data_inicio, data_fim)
-        return sum(n.valor for n in notas)
+        lista_consumo = sorted(consumo_insumos.values(), key=lambda x: x['qtd'], reverse=True)
 
-    # -----------------------------------
-    # 5 — Lucro total
-    # -----------------------------------
-    @staticmethod
-    def lucro(data_inicio, data_fim):
-        return RelatorioService.faturamento(data_inicio, data_fim) - \
-               RelatorioService.gastos_insumos(data_inicio, data_fim)
-
-    # -----------------------------------
-    # 6 — Relatório consolidado
-    # -----------------------------------
-    @staticmethod
-    def relatorio_completo(data_inicio, data_fim):
         return {
-            "faturamento": RelatorioService.faturamento(data_inicio, data_fim),
-            "gasto_insumos": RelatorioService.gastos_insumos(data_inicio, data_fim),
-            "lucro": RelatorioService.lucro(data_inicio, data_fim),
-            "produtos_vendidos": RelatorioService.produtos_vendidos(data_inicio, data_fim),
-            "consumo_insumos": RelatorioService.consumo_insumos(data_inicio, data_fim)
+            "financeiro": {"faturamento": faturamento, "custos": custos, "lucro": lucro},
+            "produtos": lista_produtos,
+            "insumos": lista_consumo
         }

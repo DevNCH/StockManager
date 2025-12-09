@@ -88,13 +88,21 @@ class PedidoDAO:
         conn.close()
 
     @staticmethod
-    def deletar(id_ped):
-        conn = conectar()
-        cur = conn.cursor()
+    def deletar(id_ped, cursor_externo=None):
+        if cursor_externo:
+            cur = cursor_externo
+            fechar = False
+        else:
+            conn = conectar()
+            cur = conn.cursor()
+            fechar = True
+
         cur.execute("DELETE FROM pedidos WHERE id=%s", (id_ped,))
-        conn.commit()
-        cur.close()
-        conn.close()
+
+        if fechar:
+            conn.commit()
+            cur.close()
+            conn.close()
 
     @staticmethod
     def buscar_por_periodo(data_inicio, data_fim):

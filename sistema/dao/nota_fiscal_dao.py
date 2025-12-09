@@ -7,7 +7,7 @@ class NotaFiscalDAO:
     def listar_todas():
         conn = conectar()
         cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT * FROM notas_fiscais")
+        cur.execute("SELECT * FROM notas_fiscais ORDER BY id DESC")
         dados = cur.fetchall()
         cur.close()
         conn.close()

@@ -1,8 +1,11 @@
 import customtkinter as ctk
-from tkinter import ttk  # <--- NÃO ESQUEÇA DE IMPORTAR ISSO
+from tkinter import ttk
 from sistema.views.insumo_view import InsumoView
 from sistema.views.home_view import HomeView
 from sistema.views.compra_view import CompraView
+from sistema.views.ficha_tecnica_view import FichaTecnicaView
+from sistema.views.pedido_view import PedidoView
+from sistema.views.relatorio_view import RelatorioView
 
 # Configuração Global
 ctk.set_appearance_mode("Dark")
@@ -61,6 +64,18 @@ class App(ctk.CTk):
     def mostrar_compras(self):
         self._limpar_tela()
         self.tela_atual = CompraView(parent=self, controller_main=self)
+
+    def mostrar_fichas(self):
+        self._limpar_tela()
+        self.tela_atual = FichaTecnicaView(parent=self, controller_main=self)
+
+    def mostrar_pedidos(self):
+        self._limpar_tela()
+        self.tela_atual = PedidoView(parent=self, controller_main=self)
+
+    def mostrar_relatorios(self):
+        self._limpar_tela()
+        self.tela_atual = RelatorioView(parent=self, controller_main=self)
 
 if __name__ == "__main__":
     app = App()
