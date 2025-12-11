@@ -33,7 +33,12 @@ class PedidoController:
         if not dados_cliente.get('cliente'):
             messagebox.showwarning("Aviso", "O nome do cliente é obrigatório!")
             return
-
+        if not dados_cliente.get('data'):
+            messagebox.showwarning("Aviso", "O data do pedido é obrigatória!")
+            return
+        if not dados_cliente.get('telefone'):
+            messagebox.showwarning("Aviso", "O telefone do cliente é obrigatório!")
+            return
         total_pedido = sum([item['qtd'] * item['valor_unit'] for item in lista_itens_carrinho])
         
         dados_finais = dados_cliente.copy()

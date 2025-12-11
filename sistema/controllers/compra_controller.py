@@ -15,10 +15,21 @@ class CompraController:
 
     def salvar_nota_completa(self, cabecalho_dict, lista_itens, janela, callback_atualizar, id_nota_editar=None):
         # 1. Validação de Formulário (Responsabilidade da Controller)
-        if not cabecalho_dict['fornecedor'] or not cabecalho_dict['data']:
-            messagebox.showwarning("Aviso", "Preencha Fornecedor e Data!")
+        if not cabecalho_dict['fornecedor']:
+            messagebox.showwarning("Aviso", "Preencha Fornecedor!")
             return
-            
+        if not cabecalho_dict['cnpj']:
+            messagebox.showwarning("Aviso", "Preencha CNPJ!")
+            return
+        if not cabecalho_dict['nfce']:
+            messagebox.showwarning("Aviso", "Preencha NFCe!")
+            return
+        if not cabecalho_dict['serie']:
+            messagebox.showwarning("Aviso", "Preencha Série!")
+            return
+        if not cabecalho_dict['data']:
+            messagebox.showwarning("Aviso", "Preencha Data!")
+            return
         if not lista_itens:
             messagebox.showwarning("Aviso", "Adicione pelo menos um insumo na nota!")
             return

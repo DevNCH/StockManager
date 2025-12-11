@@ -28,6 +28,9 @@ class InsumoController:
         if not Validadores.validar_numero(qtd_str):
             messagebox.showerror("Erro", "Quantidade inválida! Use números.")
             return
+        
+        if not unidade:
+            messagebox.showerror("Erro", "Preencha o campo de unidade!")
 
         # 2. Conversão
         qtd_float = Helpers.ler_dinheiro(qtd_str)

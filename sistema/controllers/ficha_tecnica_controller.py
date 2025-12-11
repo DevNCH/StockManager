@@ -19,6 +19,10 @@ class FichaTecnicaController:
         if not nome:
             messagebox.showwarning("Aviso", "O nome do produto é obrigatório!")
             return
+        
+        if not valor_str:
+            messagebox.showwarning("Aviso", "O valor do produto é obrigatório!")
+            return
             
         if not lista_ingredientes:
             messagebox.showwarning("Aviso", "Adicione pelo menos um ingrediente à ficha!")
